@@ -55,9 +55,6 @@
       "router": {
         "origin": false
       },
-      "eas": {
-        "projectId": "your-project-id"
-      },
       "backendUrl": "https://e84cfwenmbgezb5bkan4zwm9r784pkmq.app.specular.dev"
     }
   }

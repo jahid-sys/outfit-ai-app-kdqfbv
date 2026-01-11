@@ -22,7 +22,8 @@ type OutfitCategory = 'Sport' | 'Casual' | 'Professional' | 'Chill';
 interface AnalysisResult {
   category: OutfitCategory;
   explanation: string;
-  confidence?: string;
+  confidence: string;
+  suggestionImageUrl: string;
 }
 
 const categoryColors: Record<OutfitCategory, string[]> = {
@@ -156,12 +157,13 @@ export default function CameraScreen() {
       const data = await response.json();
       console.log('[Camera] Analysis result:', data);
       
-      // Validate response structure
-      if (!data.category || !data.explanation) {
+      // Validate response structure according to API spec
+      if (!data.category || !data.explanation || !data.confidence || !data.suggestionImageUrl) {
         console.error('[Camera] Invalid response structure:', data);
         throw new Error('Invalid response from server');
       }
       
+      console.log('[Camera] Suggestion image URL:', data.suggestionImageUrl);
       setResult(data);
     } catch (error) {
       console.error('[Camera] Error analyzing outfit:', error);
@@ -292,6 +294,34 @@ export default function CameraScreen() {
         {/* Result Display */}
         {result && (
           <View style={styles.resultContainer}>
+            {/* Generated Outfit Image */}
+            {result.suggestionImageUrl && (
+              <View style={styles.generatedImageContainer}>
+                <Text style={styles.generatedImageTitle}>✨ Suggested Outfit</Text>
+                <Image 
+                  source={{ uri: result.suggestionImageUrl }} 
+                  style={styles.generatedImage}
+                  resizeMode="cover"
+                />
+                <View style={styles.generatedImageBadge}>
+                  <LinearGradient
+                    colors={categoryColors[result.category]}
+                    style={styles.badgeGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <IconSymbol
+                      ios_icon_name="sparkles"
+                      android_material_icon_name={categoryIcons[result.category]}
+                      size={20}
+                      color="#fff"
+                    />
+                    <Text style={styles.badgeText}>{result.category}</Text>
+                  </LinearGradient>
+                </View>
+              </View>
+            )}
+
             <LinearGradient
               colors={categoryColors[result.category]}
               style={styles.resultGradient}
@@ -312,12 +342,10 @@ export default function CameraScreen() {
                 <Text style={styles.resultLabel}>Analysis:</Text>
                 <Text style={styles.resultExplanation}>{result.explanation}</Text>
                 
-                {result.confidence && (
-                  <View style={styles.confidenceContainer}>
-                    <Text style={styles.confidenceLabel}>Confidence:</Text>
-                    <Text style={styles.confidenceValue}>{result.confidence}</Text>
-                  </View>
-                )}
+                <View style={styles.confidenceContainer}>
+                  <Text style={styles.confidenceLabel}>Confidence:</Text>
+                  <Text style={styles.confidenceValue}>{result.confidence}</Text>
+                </View>
               </View>
             </LinearGradient>
 
@@ -361,7 +389,7 @@ export default function CameraScreen() {
           </View>
           <View style={styles.infoItem}>
             <Text style={styles.infoNumber}>3</Text>
-            <Text style={styles.infoText}>Get AI-powered style suggestions</Text>
+            <Text style={styles.infoText}>Get AI-generated outfit suggestion image</Text>
           </View>
         </View>
       </ScrollView>
@@ -598,5 +626,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     lineHeight: 20,
+  },
+  generatedImageContainer: {
+    width: '100%',
+    marginBottom: 20,
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: '#1a1a2e',
+    position: 'relative',
+  },
+  generatedImageTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
+    paddingVertical: 16,
+    backgroundColor: '#1a1a2e',
+  },
+  generatedImage: {
+    width: '100%',
+    aspectRatio: 3 / 4,
+  },
+  generatedImageBadge: {
+    position: 'absolute',
+    top: 60,
+    right: 16,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  badgeGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
