@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { gateway } from '@specific-dev/framework';
-import { generateObject } from 'ai';
+import { generateObject, generateText } from 'ai';
 import { z } from 'zod';
 import type { App } from '../index.js';
 
@@ -13,12 +13,20 @@ const outfitAnalysisSchema = z.object({
 
 type OutfitAnalysis = z.infer<typeof outfitAnalysisSchema>;
 
+// Schema for outfit suggestion response
+const outfitSuggestionResponseSchema = z.object({
+  category: z.string(),
+  explanation: z.string(),
+  confidence: z.string(),
+  suggestionImageUrl: z.string(),
+});
+
 export function register(app: App, fastify: FastifyInstance) {
-  fastify.post<{ Reply: OutfitAnalysis }>(
+  fastify.post<{ Reply: z.infer<typeof outfitSuggestionResponseSchema> }>(
     '/api/analyze-outfit',
     {
       schema: {
-        description: 'Analyze an outfit image and categorize it',
+        description: 'Analyze an outfit image and generate a suggestion outfit',
         tags: ['outfit-analysis'],
         response: {
           200: {
@@ -37,8 +45,12 @@ export function register(app: App, fastify: FastifyInstance) {
                 type: 'string',
                 description: 'Confidence level of the analysis',
               },
+              suggestionImageUrl: {
+                type: 'string',
+                description: 'URL to the generated outfit suggestion image',
+              },
             },
-            required: ['category', 'explanation', 'confidence'],
+            required: ['category', 'explanation', 'confidence', 'suggestionImageUrl'],
           },
         },
       },
@@ -99,7 +111,49 @@ Consider the following:
           ],
         });
 
-        return object;
+        // Generate outfit suggestion image based on category
+        const categoryDescriptions: Record<string, string> = {
+          Sport: 'athletic wear with performance fabrics, sneakers, and sport accessories for active activities',
+          Casual: 'comfortable everyday outfit with jeans or casual pants, t-shirt or casual top, and comfortable sneakers',
+          Professional: 'business suit or formal dress with polished shoes, subtle accessories, and a clean, professional appearance',
+          Chill: 'relaxed and comfortable loungewear outfit, cozy layers, and casual house shoes for relaxing at home',
+        };
+
+        const suggestionPrompt = `Generate a high-quality fashion illustration of a complete outfit styled for the "${object.category}" category.
+The outfit should showcase typical pieces and styling for this category: ${categoryDescriptions[object.category as keyof typeof categoryDescriptions]}.
+Create a detailed, professional-looking outfit illustration with a person wearing the suggested clothing.`;
+
+        const generationResult = await generateText({
+          model: gateway('google/gemini-2.5-flash-image'),
+          prompt: suggestionPrompt,
+        });
+
+        // Extract the first image from the generation result
+        let suggestionImageUrl = '';
+        if (generationResult.files && generationResult.files.length > 0) {
+          const imageFile = generationResult.files.find(f =>
+            f.mediaType?.startsWith('image/')
+          );
+          if (imageFile && imageFile.uint8Array) {
+            // Convert image to buffer
+            const imageBuffer = Buffer.from(imageFile.uint8Array);
+            // Upload to storage
+            const timestamp = Date.now();
+            const storageKey = `outfit-suggestions/${timestamp}-${object.category.toLowerCase()}.png`;
+            await app.storage.upload(storageKey, imageBuffer);
+            // Generate signed URL
+            const { url } = await app.storage.getSignedUrl(storageKey);
+            suggestionImageUrl = url;
+          }
+        }
+
+        // Return the combined response
+        return {
+          category: object.category,
+          explanation: object.explanation,
+          confidence: object.confidence,
+          suggestionImageUrl,
+        };
       } catch (error) {
         app.logger.error(error, 'Error analyzing outfit');
         return reply
