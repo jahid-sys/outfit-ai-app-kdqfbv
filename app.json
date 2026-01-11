@@ -1,0 +1,64 @@
+{
+  "expo": {
+    "name": "Outfit Analyzer",
+    "slug": "outfit-analyzer",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/final_quest_240x240.png",
+    "scheme": "outfit-analyzer",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/final_quest_240x240.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f0f1e"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.natively.outfitanalyzer",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app needs access to your camera to take photos of your outfits for style analysis.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select outfit photos for style analysis."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/final_quest_240x240.png",
+        "backgroundColor": "#0f0f1e"
+      },
+      "package": "com.natively.outfitanalyzer",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/final_quest_240x240.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "This app needs access to your photos to select outfit images for style analysis.",
+          "cameraPermission": "This app needs access to your camera to take photos of your outfits for style analysis."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "your-project-id"
+      },
+      "backendUrl": "https://e84cfwenmbgezb5bkan4zwm9r784pkmq.app.specular.dev"
+    }
+  }
+}
